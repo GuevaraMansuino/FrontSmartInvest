@@ -75,7 +75,7 @@ export default function CronStatusBadge() {
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
-              Cron Job programado (1h) evita suspensión por inactividad de Supabase y Render.
+              Cron externo (cron-job.org) evita suspensión por inactividad en Supabase y Render.
             </p>
           </div>
         </div>
