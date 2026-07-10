@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Wallet, History, LayoutGrid, List, Plus, X, Search, Check, Edit2, Trash2 } from 'lucide-react';
+import { getApiUrl } from '../utils/api';
 
 interface Portfolio {
   id: string;
@@ -72,7 +73,7 @@ export default function Portfolios() {
   };
 
   useEffect(() => {
-    fetch('/api/portfolios')
+    fetch(getApiUrl('/api/portfolios'))
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -92,7 +93,7 @@ export default function Portfolios() {
         setLoading(false);
       });
 
-    fetch('/api/assets')
+    fetch(getApiUrl('/api/assets'))
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -107,7 +108,7 @@ export default function Portfolios() {
   useEffect(() => {
     if (selectedPortfolioId) {
       setLoading(true);
-      fetch(`/api/portfolios/${selectedPortfolioId}/transactions`)
+      fetch(getApiUrl(`/api/portfolios/${selectedPortfolioId}/transactions`))
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -157,14 +158,14 @@ export default function Portfolios() {
       : `/api/portfolios/${selectedPortfolioId}/transactions`;
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(getApiUrl(url), {
         method: isEditing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
         // Refetch transactions
-        const txnsRes = await fetch(`/api/portfolios/${selectedPortfolioId}/transactions`);
+        const txnsRes = await fetch(getApiUrl(`/api/portfolios/${selectedPortfolioId}/transactions`));
         const txnsData = await txnsRes.json();
         if (Array.isArray(txnsData)) {
           setTransactions(txnsData);
@@ -202,7 +203,7 @@ export default function Portfolios() {
   const handleDeleteTxn = async (txnId: string) => {
     if (!selectedPortfolioId || !window.confirm('¿Estás seguro de que quieres eliminar esta transacción?')) return;
     try {
-      const res = await fetch(`/api/portfolios/${selectedPortfolioId}/transactions/${txnId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/portfolios/${selectedPortfolioId}/transactions/${txnId}`), { method: 'DELETE' });
       if (res.ok) {
         setTransactions(transactions.filter(t => t.id !== txnId));
       } else {

@@ -2,10 +2,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Watchlist from './components/Watchlist'
 import Portfolios from './components/Portfolios'
+import CronStatusBadge from './components/CronStatusBadge'
 
 function Dashboard() {
   return (
     <div className="space-y-8">
+      <CronStatusBadge />
       <Watchlist />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

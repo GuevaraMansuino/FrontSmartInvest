@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { getApiUrl } from '../utils/api';
 
 interface FeaturedAsset {
   symbol: string;
@@ -80,7 +81,7 @@ export default function Watchlist() {
       }
 
       setLoading(true);
-      const response = await fetch('/api/market/featured', { signal: controller.signal });
+      const response = await fetch(getApiUrl('/api/market/featured'), { signal: controller.signal });
       if (!response.ok) throw new Error('Error fetching market data');
 
       const data = await response.json();
