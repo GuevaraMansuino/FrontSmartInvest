@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Mail, KeyRound, Smartphone, CheckCircle2, AlertCircle, RefreshCw, Lock, Sparkles, Download } from 'lucide-react';
+import { ShieldCheck, Mail, KeyRound, Smartphone, CheckCircle2, AlertCircle, RefreshCw, Lock, Sparkles, Download, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { fetchWithAuth } from '../utils/apiClient';
 
@@ -11,6 +11,8 @@ export default function Settings() {
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [devCode, setDevCode] = useState<string | null>(null);
   const [loadingCode, setLoadingCode] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -226,30 +228,50 @@ export default function Settings() {
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
                   Nueva Contraseña
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="Mínimo 8 caracteres"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    placeholder="Mínimo 8 caracteres"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors p-1"
+                    aria-label={showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5">
                   Confirmar Contraseña
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="Repetir nueva contraseña"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    placeholder="Repetir nueva contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-3.5 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors p-1"
+                    aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 

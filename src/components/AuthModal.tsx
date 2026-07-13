@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, X, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, X, AlertCircle, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, setAuthModalOpen, login, register } = useAuth();
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -132,13 +133,21 @@ export const AuthModal: React.FC = () => {
             <div className="relative">
               <Lock className="absolute left-3.5 top-3 h-4 w-4 text-gray-500" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full rounded-xl bg-neutral-950 border border-white/15 pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-colors"
+                className="w-full rounded-xl bg-neutral-950 border border-white/15 pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none transition-colors"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-white transition-colors p-1"
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             {tab === 'register' && (
               <p className="text-xs text-gray-400 mt-1.5">
