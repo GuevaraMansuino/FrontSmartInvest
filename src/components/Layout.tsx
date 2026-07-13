@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, TrendingUp, Wallet, Settings, LogOut, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AuthModal } from './AuthModal'
@@ -11,6 +12,7 @@ export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, isAuthenticated, setAuthModalOpen, logout } = useAuth()
+  const location = useLocation()
 
   const menuItems = [
     { icon: TrendingUp, label: 'Dashboard', href: '/' },
@@ -50,17 +52,22 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         <nav className="flex-1 px-3 py-8 space-y-2">
-          {menuItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-4 px-4 py-3 rounded-lg transition-colors hover:bg-gray-900"
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </a>
-          ))}
+          {menuItems.map((item) => {
+            const active = location.pathname === item.href;
+            return (
+              <Link
+                key={item.label}
+                to={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  active ? 'bg-white/15 text-emerald-400 font-semibold' : 'hover:bg-gray-900 text-gray-300'
+                }`}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
         </nav>
 
         <div className="px-3 py-6 border-t border-white/20">
@@ -120,21 +127,24 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-8 space-y-2">
-          {menuItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                sidebarOpen
-                  ? 'hover:bg-gray-900'
-                  : 'hover:bg-gray-900 justify-center'
-              }`}
-              title={!sidebarOpen ? item.label : undefined}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-            </a>
-          ))}
+          {menuItems.map((item) => {
+            const active = location.pathname === item.href;
+            return (
+              <Link
+                key={item.label}
+                to={item.href}
+                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  active
+                    ? 'bg-white/15 text-emerald-400 font-semibold'
+                    : 'hover:bg-gray-900 text-gray-300'
+                } ${!sidebarOpen && 'justify-center'}`}
+                title={!sidebarOpen ? item.label : undefined}
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Footer */}

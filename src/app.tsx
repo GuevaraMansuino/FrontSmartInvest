@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import Layout from './components/Layout'
 import Watchlist from './components/Watchlist'
 import Portfolios from './components/Portfolios'
+import Settings from './components/Settings'
 import CronStatusBadge from './components/CronStatusBadge'
 import { getApiUrl } from './utils/api'
 import { fetchWithAuth } from './utils/apiClient'
@@ -172,6 +173,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/portfolios" element={<Portfolios />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>
       </Router>
