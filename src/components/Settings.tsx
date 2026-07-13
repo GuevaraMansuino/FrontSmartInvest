@@ -63,6 +63,10 @@ export default function Settings() {
       setErrorMessage('La nueva contraseña debe tener al menos 8 caracteres.');
       return;
     }
+    if (!/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      setErrorMessage('La contraseña debe incluir al menos una letra y un número.');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setErrorMessage('Las contraseñas no coinciden.');
       return;
@@ -73,13 +77,21 @@ export default function Settings() {
       const res = await fetchWithAuth('/api/auth/verify-and-change-password', {
         method: 'POST',
         body: JSON.stringify({
-          code,
+          code: code.trim(),
           new_password: newPassword,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || 'Error al actualizar la contraseña.');
+        let errStr = 'Error al actualizar la contraseña.';
+        if (typeof data.detail === 'string') {
+          errStr = data.detail;
+        } else if (Array.isArray(data.detail) && data.detail.length > 0) {
+          errStr = data.detail
+            .map((item: any) => (item.msg || '').replace('Value error, ', ''))
+            .join(' ');
+        }
+        throw new Error(errStr);
       }
 
       setSuccessMessage('¡Contraseña actualizada exitosamente!');
