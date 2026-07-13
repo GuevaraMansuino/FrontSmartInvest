@@ -40,7 +40,7 @@ export default function CronStatusBadge() {
   const isHealthy = data?.database === 'pong' && data?.status === 'awake';
 
   return (
-    <div className="bg-black/80 backdrop-blur-md rounded-2xl border border-white/10 p-5 shadow-xl transition-all hover:border-white/20">
+    <div className="hidden md:block bg-black/80 backdrop-blur-md rounded-2xl border border-white/10 p-5 shadow-xl transition-all hover:border-white/20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Izquierda: Estado general y Títulos */}
         <div className="flex items-center gap-3.5">

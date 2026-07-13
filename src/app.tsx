@@ -98,63 +98,63 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <CronStatusBadge />
       <Watchlist />
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-black rounded-lg p-6 border border-white/20 transition hover:border-white/40">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Total de Billetera</p>
-            <Wallet className="w-4 h-4 text-emerald-400" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="bg-black rounded-xl p-4 sm:p-6 border border-white/20 transition hover:border-white/40 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1.5 gap-1">
+            <p className="text-[11px] sm:text-sm text-gray-400 font-medium">Total de Billetera</p>
+            <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 flex-shrink-0" />
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-white">
+          <p className="text-lg sm:text-3xl font-bold text-white truncate">
             {loading ? '...' : formatCurrency(totalWallet)}
           </p>
         </div>
 
-        <div className="bg-black rounded-lg p-6 border border-white/20 transition hover:border-white/40">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Total Invertido</p>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+        <div className="bg-black rounded-xl p-4 sm:p-6 border border-white/20 transition hover:border-white/40 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1.5 gap-1">
+            <p className="text-[11px] sm:text-sm text-gray-400 font-medium">Total Invertido</p>
+            <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 flex-shrink-0" />
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-emerald-400">
+          <p className="text-lg sm:text-3xl font-bold text-emerald-400 truncate">
             {loading ? '...' : formatCurrency(totalInvested)}
           </p>
         </div>
 
-        <div className="bg-black rounded-lg p-6 border border-white/20 transition hover:border-white/40">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Plata Reservada</p>
-            <Wallet className="w-4 h-4 text-blue-400" />
+        <div className="bg-black rounded-xl p-4 sm:p-6 border border-white/20 transition hover:border-white/40 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1.5 gap-1">
+            <p className="text-[11px] sm:text-sm text-gray-400 font-medium">Plata Reservada</p>
+            <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-white">
+          <p className="text-lg sm:text-3xl font-bold text-white truncate">
             {loading ? '...' : formatCurrency(reservedCash)}
           </p>
         </div>
 
-        <div className="bg-black rounded-lg p-6 border border-white/20 transition hover:border-white/40">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-400">Activos en Cartera</p>
-            <Layers className="w-4 h-4 text-purple-400" />
+        <div className="bg-black rounded-xl p-4 sm:p-6 border border-white/20 transition hover:border-white/40 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1.5 gap-1">
+            <p className="text-[11px] sm:text-sm text-gray-400 font-medium">Activos en Cartera</p>
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 flex-shrink-0" />
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-white">{loading ? '...' : totalAssets}</p>
+          <p className="text-lg sm:text-3xl font-bold text-white truncate">{loading ? '...' : totalAssets}</p>
         </div>
       </div>
 
-      <div className="bg-black rounded-lg p-8 border border-white/20 flex flex-col items-center justify-center text-center space-y-4">
+      <div className="bg-black rounded-xl p-6 sm:p-8 border border-white/20 flex flex-col items-center justify-center text-center space-y-4">
         <div className="p-3 rounded-full bg-white/5 border border-white/10">
           <TrendingUp className="w-6 h-6 text-emerald-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Resumen y Evolución de Carteras</h3>
-          <p className="text-sm text-gray-400 max-w-md mt-1">
+          <h3 className="text-base sm:text-lg font-semibold text-white">Resumen y Evolución de Carteras</h3>
+          <p className="text-xs sm:text-sm text-gray-400 max-w-md mt-1">
             Gestiona tus portafolios e inversiones para ver la evolución de tus activos aquí.
           </p>
         </div>
         <Link
           to="/portfolios"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black font-medium text-sm hover:bg-gray-200 transition"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black font-medium text-xs sm:text-sm hover:bg-gray-200 transition"
         >
           Ir a Carteras
           <ArrowUpRight className="w-4 h-4" />

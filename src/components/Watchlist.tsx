@@ -133,43 +133,48 @@ export default function Watchlist() {
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="flex md:grid md:grid-cols-5 overflow-x-auto md:overflow-visible gap-3 sm:gap-4 pb-2 md:pb-0 snap-x snap-mandatory">
         {assets.map((asset) => {
           const isPositive = (asset.change_percent || 0) >= 0;
           return (
             <div 
               key={asset.symbol} 
-              className="group bg-black rounded-xl p-4 border border-white hover:border-gray-400 transition-all hover:shadow-sm"
+              className="group bg-black rounded-xl p-4 border border-white hover:border-gray-400 transition-all hover:shadow-sm w-[155px] sm:w-[180px] md:w-auto flex-shrink-0 snap-start aspect-square flex flex-col justify-between"
             >
-              <div className="flex justify-between items-start mb-1 gap-2">
-                <div>
-                  <span className="text-sm font-bold text-white group-hover:text-gray-300 transition-colors">
-                    {asset.symbol}
-                  </span>
-                  {asset.quote_symbol && (
-                    <div className="text-[11px] text-gray-500">{asset.quote_symbol}</div>
+              <div>
+                <div className="flex justify-between items-start mb-1 gap-1">
+                  <div>
+                    <span className="text-sm font-bold text-white group-hover:text-gray-300 transition-colors">
+                      {asset.symbol}
+                    </span>
+                    {asset.quote_symbol && (
+                      <div className="text-[10px] text-gray-500 truncate max-w-[80px]">{asset.quote_symbol}</div>
+                    )}
+                  </div>
+                  {asset.change_percent !== null && (
+                    <div className={`flex items-center text-[11px] font-medium ${isPositive ? 'text-positive' : 'text-negative'}`}>
+                      {isPositive ? <ArrowUpRight className="w-3 h-3 mr-0.5 flex-shrink-0" /> : <ArrowDownRight className="w-3 h-3 mr-0.5 flex-shrink-0" />}
+                      {Math.abs(asset.change_percent).toFixed(1)}%
+                    </div>
                   )}
                 </div>
-                {asset.change_percent !== null && (
-                  <div className={`flex items-center text-xs font-medium ${isPositive ? 'text-positive' : 'text-negative'}`}>
-                    {isPositive ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
-                    {Math.abs(asset.change_percent).toFixed(2)}%
-                  </div>
-                )}
+                <div className="text-xs text-gray-500 line-clamp-2 mb-2" title={asset.name}>
+                  {asset.name}
+                </div>
               </div>
-              <div className="text-xs text-gray-500 truncate mb-2" title={asset.name}>
-                {asset.name}
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] uppercase tracking-wider border border-gray-700 rounded-full px-2 py-0.5 text-gray-400">
-                  {asset.instrument_type ?? 'Activo'}
-                </span>
-                <span className="text-[10px] uppercase tracking-wider text-gray-500">
-                  {asset.currency ?? 'ARS'}
-                </span>
-              </div>
-              <div className="text-lg font-bold text-white">
-                {formatAssetPrice(asset)}
+
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="text-[9px] uppercase tracking-wider border border-gray-700 rounded-full px-2 py-0.5 text-gray-400">
+                    {asset.instrument_type ?? 'Activo'}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-gray-500">
+                    {asset.currency ?? 'ARS'}
+                  </span>
+                </div>
+                <div className="text-base sm:text-lg font-bold text-white truncate">
+                  {formatAssetPrice(asset)}
+                </div>
               </div>
             </div>
           );

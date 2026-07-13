@@ -478,16 +478,16 @@ export default function Portfolios() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mi Billetera</h1>
-          <p className="text-gray-400 text-sm mt-1">Resumen de tus activos y transacciones</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Mi Billetera</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">Resumen de tus activos y transacciones</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3">
           {portfolios.length > 1 && (
             <select 
-              className="bg-black border border-gray-700 text-white rounded-lg p-2 text-sm focus:outline-none focus:border-white transition-colors"
+              className="bg-black border border-gray-700 text-white rounded-lg p-2 text-xs sm:text-sm focus:outline-none focus:border-white transition-colors"
               value={selectedPortfolioId || ''}
               onChange={e => setSelectedPortfolioId(e.target.value)}
             >
@@ -507,7 +507,7 @@ export default function Portfolios() {
               setFormType('BUY');
               setShowAddModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold rounded-lg hover:bg-gray-200 transition-all hover:scale-[1.02] shadow-lg shadow-white/10"
+            className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-xs sm:text-sm font-bold rounded-lg hover:bg-gray-200 transition-all hover:scale-[1.02] shadow-lg shadow-white/10"
           >
             <Plus className="w-4 h-4" />
             Ingresar Nómina
@@ -516,21 +516,21 @@ export default function Portfolios() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-black rounded-xl p-6 border border-white relative overflow-hidden group">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-black rounded-xl p-5 sm:p-6 border border-white relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity">
             <Wallet className="w-16 h-16 text-white" />
           </div>
           <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Total de Billetera</p>
-          <p className="text-3xl font-black text-white">{formatCurrency(totalWalletValue)}</p>
+          <p className="text-2xl sm:text-3xl font-black text-white">{formatCurrency(totalWalletValue)}</p>
         </div>
-        <div className="bg-black rounded-xl p-6 border border-gray-800">
+        <div className="bg-black rounded-xl p-5 sm:p-6 border border-gray-800">
           <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Total Invertido</p>
-          <p className="text-3xl font-black text-green-400">{formatCurrency(totalInvertido)}</p>
+          <p className="text-2xl sm:text-3xl font-black text-green-400">{formatCurrency(totalInvertido)}</p>
         </div>
-        <div className="bg-black rounded-xl p-6 border border-gray-800">
+        <div className="bg-black rounded-xl p-5 sm:p-6 border border-gray-800">
           <p className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Plata Reservada</p>
-          <p className="text-3xl font-black text-blue-400">{formatCurrency(totalGuardado)}</p>
+          <p className="text-2xl sm:text-3xl font-black text-blue-400">{formatCurrency(totalGuardado)}</p>
         </div>
       </div>
 
@@ -622,7 +622,7 @@ export default function Portfolios() {
       {viewMode === 'history' && (
         <div className="bg-black border border-white rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr className="border-b border-gray-800 text-xs uppercase tracking-wider text-gray-500 bg-gray-900/20">
                   <th className="p-4 font-medium">Fecha</th>
