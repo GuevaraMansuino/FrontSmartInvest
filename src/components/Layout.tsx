@@ -36,7 +36,10 @@ export default function Layout({ children }: LayoutProps) {
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-white/20">
+        <div
+          style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
+          className="min-h-20 pb-3.5 flex items-center justify-between px-6 border-b border-white/20"
+        >
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-black" />
@@ -178,7 +181,10 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto flex flex-col min-w-0">
         {/* Responsive Header */}
-        <header className="min-h-[72px] md:h-16 py-3.5 md:py-0 bg-black border-b border-white/20 flex items-center px-4 md:px-8 sticky top-0 z-40">
+        <header
+          style={{ paddingTop: 'max(14px, env(safe-area-inset-top))' }}
+          className="min-h-[76px] md:min-h-16 pb-3.5 md:py-0 bg-black border-b border-white/20 flex items-center px-4 md:px-8 sticky top-0 z-40"
+        >
           <div className="flex items-center justify-between w-full min-w-0 gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
