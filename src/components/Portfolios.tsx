@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, Wallet, History, LayoutGrid, List, Plus, X, Search, Check, Edit2, Trash2 } from 'lucide-react';
 import { getApiUrl } from '../utils/api';
 import { fetchWithAuth } from '../utils/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 interface Portfolio {
   id: string;
@@ -41,6 +42,7 @@ interface AssetDef {
 }
 
 export default function Portfolios() {
+  const { isAuthenticated } = useAuth();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -74,6 +76,7 @@ export default function Portfolios() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchWithAuth('/api/portfolios')
       .then(res => res.ok ? res.json() : [])
       .then(data => {
@@ -104,7 +107,7 @@ export default function Portfolios() {
         }
       })
       .catch(err => console.error(err));
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (selectedPortfolioId) {

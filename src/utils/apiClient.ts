@@ -36,13 +36,12 @@ export async function fetchWithAuth(
 
   const response = await fetch(url, mergedOptions);
 
-  // No interceptar endpoints propios de autenticación ni verificación inicial
+  // No interceptar endpoints propios de login/registro/refresh/logout
   const isAuthEndpoint =
     path.includes('/api/auth/login') ||
     path.includes('/api/auth/register') ||
     path.includes('/api/auth/refresh') ||
-    path.includes('/api/auth/logout') ||
-    path.includes('/api/auth/me');
+    path.includes('/api/auth/logout');
 
   if (response.status === 401 && !isAuthEndpoint) {
     if (isRefreshing) {
