@@ -5,9 +5,12 @@ import Watchlist from './components/Watchlist'
 import Portfolios from './components/Portfolios'
 import CronStatusBadge from './components/CronStatusBadge'
 import { getApiUrl } from './utils/api'
+import { fetchWithAuth } from './utils/apiClient'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { ArrowUpRight, Wallet, TrendingUp, Layers } from 'lucide-react'
 
 function Dashboard() {
+  const { isAuthenticated } = useAuth()
   const [totalWallet, setTotalWallet] = useState<number>(0)
   const [totalInvested, setTotalInvested] = useState<number>(0)
   const [reservedCash, setReservedCash] = useState<number>(0)
@@ -16,9 +19,17 @@ function Dashboard() {
 
   useEffect(() => {
     async function fetchDashboardStats() {
+      if (!isAuthenticated) {
+        setLoading(false)
+        return
+      }
       try {
         setLoading(true)
-        const res = await fetch(getApiUrl('/api/portfolios'))
+        const res = await fetchWithAuth('/api/portfolios')
+        if (res.status === 401) {
+          setLoading(false)
+          return
+        }
         if (!res.ok) throw new Error('Error cargando portafolios')
         const portfolios = await res.json()
 
@@ -26,7 +37,7 @@ function Dashboard() {
           const assetSummaries: Record<string, { totalCost: number; savedCash: number; quantity: number }> = {}
 
           for (const p of portfolios) {
-            const txRes = await fetch(getApiUrl(`/api/portfolios/${p.id}/transactions`))
+            const txRes = await fetchWithAuth(`/api/portfolios/${p.id}/transactions`)
             if (txRes.ok) {
               const txs = await txRes.json()
               if (Array.isArray(txs)) {
@@ -75,7 +86,7 @@ function Dashboard() {
     }
 
     fetchDashboardStats()
-  }, [])
+  }, [isAuthenticated])
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -155,13 +166,15 @@ function Dashboard() {
 
 export default function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/portfolios" element={<Portfolios />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/portfolios" element={<Portfolios />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </AuthProvider>
   )
 }
