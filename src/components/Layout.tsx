@@ -37,15 +37,18 @@ export default function Layout({ children }: LayoutProps) {
     <div className="flex h-screen bg-black overflow-hidden">
       {/* Toast Notification over Sidebar/Screen */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-[100] max-w-md w-[92%] md:w-auto animate-fade-in duration-300">
-          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral-900 border border-emerald-500/40 shadow-2xl shadow-emerald-500/20 text-white">
+        <div
+          style={{ top: 'max(84px, calc(env(safe-area-inset-top, 50px) + 28px))' }}
+          className="fixed left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-[100] max-w-md w-[94%] md:w-auto animate-fade-in duration-300"
+        >
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-md border border-emerald-500/50 shadow-2xl shadow-emerald-500/25 text-white">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Acceso Restringido</p>
-                <p className="text-xs sm:text-sm font-medium text-gray-200">{toastMessage}</p>
+                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Acceso Restringido</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-200 leading-snug">{toastMessage}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -54,13 +57,13 @@ export default function Layout({ children }: LayoutProps) {
                   setToastMessage(null)
                   setAuthModalOpen(true)
                 }}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-400 transition"
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs sm:text-sm hover:from-emerald-400 hover:to-teal-400 transition shadow-md"
               >
                 Iniciar Sesión
               </button>
               <button
                 onClick={() => setToastMessage(null)}
-                className="p-1 text-gray-400 hover:text-white transition"
+                className="p-1.5 text-gray-400 hover:text-white transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -84,8 +87,8 @@ export default function Layout({ children }: LayoutProps) {
         }`}
       >
         <div
-          style={{ paddingTop: 'max(16px, env(safe-area-inset-top))' }}
-          className="min-h-20 pb-3.5 flex items-center justify-between px-6 border-b border-white/20"
+          style={{ paddingTop: 'max(42px, env(safe-area-inset-top, 42px))' }}
+          className="min-h-[88px] pb-4 flex items-center justify-between px-6 border-b border-white/20"
         >
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
@@ -230,19 +233,19 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1 overflow-auto flex flex-col min-w-0">
         {/* Responsive Header */}
         <header
-          style={{ paddingTop: 'max(14px, env(safe-area-inset-top))' }}
-          className="min-h-[76px] md:min-h-16 pb-3.5 md:py-0 bg-black border-b border-white/20 flex items-center px-4 md:px-8 sticky top-0 z-40"
+          style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 48px))' }}
+          className="min-h-[96px] md:min-h-20 pb-4 md:py-0 bg-black/95 backdrop-blur-md border-b border-white/20 flex items-center px-4 sm:px-6 md:px-8 sticky top-0 z-40 shadow-lg"
         >
           <div className="flex items-center justify-between w-full min-w-0 gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-2 text-white hover:bg-gray-900 rounded-lg flex-shrink-0"
+                className="md:hidden p-2.5 text-white hover:bg-gray-900 rounded-xl flex-shrink-0 border border-white/10"
                 aria-label="Abrir menú"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-6 h-6" />
               </button>
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-white truncate">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight truncate">
                 {isAuthenticated && user?.email
                   ? `Bienvenido, ${user.email.split('@')[0]}`
                   : 'Bienvenido a SmartInvest'}
@@ -255,14 +258,14 @@ export default function Layout({ children }: LayoutProps) {
                   <span className="hidden sm:inline-block text-xs text-emerald-400 font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                     Conectado
                   </span>
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center font-bold text-sm">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center font-bold text-base shadow-md">
                     {user?.email ? user.email[0].toUpperCase() : 'U'}
                   </div>
                 </div>
               ) : (
                 <button
                   onClick={() => setAuthModalOpen(true)}
-                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-slate-950 hover:from-emerald-400 hover:to-teal-400 transition-all shadow-md shadow-emerald-500/10"
+                  className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2.5 sm:px-5 sm:py-2.5 text-sm sm:text-base font-bold text-slate-950 hover:from-emerald-400 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/20 shrink-0"
                 >
                   Iniciar Sesión
                 </button>
