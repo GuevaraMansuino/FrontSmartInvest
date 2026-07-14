@@ -4,7 +4,29 @@ import { useAuth } from '../context/AuthContext';
 import { fetchWithAuth } from '../utils/apiClient';
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, setAuthModalOpen } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 rounded-2xl bg-black border border-white/20 text-center space-y-6">
+        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
+          <Lock className="w-6 h-6" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-white">Para acceder a Configuración debes iniciar sesión</h2>
+          <p className="text-sm text-gray-400">
+            Inicia sesión o crea tu cuenta para administrar tu seguridad, cambiar contraseñas y configurar notificaciones.
+          </p>
+        </div>
+        <button
+          onClick={() => setAuthModalOpen(true)}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-sm hover:from-emerald-400 hover:to-teal-400 transition"
+        >
+          Iniciar Sesión
+        </button>
+      </div>
+    );
+  }
 
   // Password Change States
   const [step, setStep] = useState<'idle' | 'code_sent'>('idle');

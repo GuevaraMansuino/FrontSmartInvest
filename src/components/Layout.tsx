@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, TrendingUp, Wallet, Settings, LogOut, Shield } from 'lucide-react'
+import { Menu, X, TrendingUp, Wallet, Settings, LogOut, Shield, Home as HomeIcon, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AuthModal } from './AuthModal'
 
@@ -11,17 +11,64 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const { user, isAuthenticated, setAuthModalOpen, logout } = useAuth()
   const location = useLocation()
 
   const menuItems = [
-    { icon: TrendingUp, label: 'Dashboard', href: '/' },
-    { icon: Wallet, label: 'Portfolios', href: '/portfolios' },
-    { icon: Settings, label: 'Configuración', href: '/settings' },
+    { icon: HomeIcon, label: 'Inicio', href: '/', requiresAuth: false },
+    { icon: TrendingUp, label: 'Dashboard', href: '/dashboard', requiresAuth: false },
+    { icon: Wallet, label: 'Portfolios', href: '/portfolios', requiresAuth: true },
+    { icon: Settings, label: 'Configuración', href: '/settings', requiresAuth: true },
   ]
+
+  const handleNavClick = (e: React.MouseEvent, item: typeof menuItems[0]) => {
+    if (item.requiresAuth && !isAuthenticated) {
+      e.preventDefault()
+      setToastMessage(`Para acceder a "${item.label}" debes iniciar sesión en tu cuenta.`)
+      setTimeout(() => {
+        setToastMessage(null)
+      }, 4500)
+    }
+    setMobileMenuOpen(false)
+  }
 
   return (
     <div className="flex h-screen bg-black overflow-hidden">
+      {/* Toast Notification over Sidebar/Screen */}
+      {toastMessage && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-[100] max-w-md w-[92%] md:w-auto animate-fade-in duration-300">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral-900 border border-emerald-500/40 shadow-2xl shadow-emerald-500/20 text-white">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Acceso Restringido</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-200">{toastMessage}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setToastMessage(null)
+                  setAuthModalOpen(true)
+                }}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs hover:from-emerald-400 hover:to-teal-400 transition"
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                onClick={() => setToastMessage(null)}
+                className="p-1 text-gray-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div
@@ -61,7 +108,7 @@ export default function Layout({ children }: LayoutProps) {
               <Link
                 key={item.label}
                 to={item.href}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => handleNavClick(e, item)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
                   active ? 'bg-white/15 text-emerald-400 font-semibold' : 'hover:bg-gray-900 text-gray-300'
                 }`}
@@ -136,6 +183,7 @@ export default function Layout({ children }: LayoutProps) {
               <Link
                 key={item.label}
                 to={item.href}
+                onClick={(e) => handleNavClick(e, item)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
                   active
                     ? 'bg-white/15 text-emerald-400 font-semibold'

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { fetchWithAuth } from '../utils/apiClient';
+import { fetchWithAuth, formatApiError } from '../utils/apiClient';
 
 export interface User {
   id: string;
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.detail || 'Credenciales inválidas.' };
+        return { success: false, error: formatApiError(data?.detail, 'Credenciales inválidas.') };
       }
 
       setUser(data.user);
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await res.json();
       if (!res.ok) {
-        return { success: false, error: data.detail || 'No se pudo crear la cuenta.' };
+        return { success: false, error: formatApiError(data?.detail, 'No se pudo crear la cuenta.') };
       }
 
       setUser(data.user);

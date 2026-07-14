@@ -96,7 +96,8 @@ export default function Watchlist() {
       } else {
         scheduleWarmupRetry();
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
       console.error(err);
       setAssets((current) => current.length > 0 ? current : FALLBACK_ASSETS);
       setError(true);

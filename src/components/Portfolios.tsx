@@ -42,7 +42,30 @@ interface AssetDef {
 }
 
 export default function Portfolios() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, setAuthModalOpen } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 rounded-2xl bg-black border border-white/20 text-center space-y-6">
+        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400">
+          <Wallet className="w-6 h-6" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-white">Para acceder a Portfolios debes iniciar sesión</h2>
+          <p className="text-sm text-gray-400">
+            Inicia sesión o crea tu cuenta gratuita para administrar tus carteras, registrar compras y hacer seguimiento de tu patrimonio.
+          </p>
+        </div>
+        <button
+          onClick={() => setAuthModalOpen(true)}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-sm hover:from-emerald-400 hover:to-teal-400 transition"
+        >
+          Iniciar Sesión
+        </button>
+      </div>
+    );
+  }
+
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);

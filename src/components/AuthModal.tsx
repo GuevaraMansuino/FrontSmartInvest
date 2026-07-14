@@ -17,26 +17,37 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim() || !password) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !password) {
       setError('Por favor completa todos los campos.');
       return;
     }
 
-    if (tab === 'register' && password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres, con letras y números.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Por favor ingresa un correo electrónico válido.');
       return;
+    }
+
+    if (tab === 'register') {
+      if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+        setError('La contraseña debe tener al menos 8 caracteres e incluir al menos una letra y un número.');
+        return;
+      }
     }
 
     setLoading(true);
     try {
       const res =
         tab === 'login'
-          ? await login(email, password)
-          : await register(email, password);
+          ? await login(cleanEmail, password)
+          : await register(cleanEmail, password);
 
       if (!res.success && res.error) {
-        setError(res.error);
+        setError(typeof res.error === 'string' ? res.error : JSON.stringify(res.error));
       }
+    } catch (err: any) {
+      setError(err?.message || 'Error inesperado al conectar con el servidor.');
     } finally {
       setLoading(false);
     }
