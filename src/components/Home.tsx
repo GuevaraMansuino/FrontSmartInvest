@@ -17,9 +17,9 @@ export default function Home() {
   const { isAuthenticated, setAuthModalOpen } = useAuth();
 
   return (
-    <div className="space-y-12 pb-12">
+    <div className="space-y-6 sm:space-y-8 md:space-y-12 pb-6 md:pb-12">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900/80 via-neutral-950 to-black border border-white/10 p-6 sm:p-10 md:p-14 shadow-2xl shadow-emerald-500/5">
+      <section className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-b from-neutral-900/80 via-neutral-950 to-black border border-white/10 p-5 sm:p-8 md:p-14 shadow-xl md:shadow-2xl shadow-emerald-500/5">
         {/* Glow de fondo */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />

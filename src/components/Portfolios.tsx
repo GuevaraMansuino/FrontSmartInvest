@@ -154,19 +154,52 @@ export default function Portfolios() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPortfolioId || (formType === 'BUY' && !formAssetId)) return;
+
+    let activePortfolioId = selectedPortfolioId;
+    if (!activePortfolioId) {
+      try {
+        const createRes = await fetchWithAuth('/api/portfolios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Mi Portafolio Principal' })
+        });
+        if (createRes.ok) {
+          const newPortfolio = await createRes.json();
+          activePortfolioId = newPortfolio.id;
+          setPortfolios(prev => [...prev, newPortfolio]);
+          setSelectedPortfolioId(newPortfolio.id);
+        } else {
+          alert('No tienes un portafolio seleccionado y ocurrió un error al crearlo automáticamente.');
+          return;
+        }
+      } catch (err) {
+        console.error('Error al crear portafolio inicial:', err);
+        alert('Error de conexión al crear tu portafolio.');
+        return;
+      }
+    }
+
+    if (formType === 'BUY' && !formAssetId) {
+      alert('Por favor selecciona un activo para comprar.');
+      return;
+    }
 
     const qty = parseFloat(formQuantity || '0');
     const price = parseFloat(formPrice || '0');
     const overrideAmount = parseFloat(formAmount || '0');
-    
-    if (formType === 'BUY' && (!qty || !price)) return;
-    if (formType === 'DEPOSIT' && !overrideAmount) return;
+
+    if (formType === 'BUY' && (isNaN(qty) || qty <= 0 || isNaN(price) || price <= 0)) {
+      alert('Por favor ingresa una cantidad y precio válidos mayores a 0.');
+      return;
+    }
+    if (formType === 'DEPOSIT' && (isNaN(overrideAmount) || overrideAmount <= 0)) {
+      alert('Por favor ingresa un monto válido mayor a 0 para reservar.');
+      return;
+    }
 
     setSubmitting(true);
     const isEditing = !!editingTxnId;
-    
-    // Si formType == 'DEPOSIT', quantity y price son null
+
     const payload = isEditing ? {
       amount: formType === 'BUY' ? (qty * price) : overrideAmount,
       quantity: formType === 'BUY' ? qty : null,
@@ -180,9 +213,9 @@ export default function Portfolios() {
       price: formType === 'BUY' ? price : null
     };
 
-    const url = isEditing 
-      ? `/api/portfolios/${selectedPortfolioId}/transactions/${editingTxnId}` 
-      : `/api/portfolios/${selectedPortfolioId}/transactions`;
+    const url = isEditing
+      ? `/api/portfolios/${activePortfolioId}/transactions/${editingTxnId}`
+      : `/api/portfolios/${activePortfolioId}/transactions`;
 
     try {
       const res = await fetchWithAuth(url, {
@@ -191,8 +224,7 @@ export default function Portfolios() {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        // Refetch transactions
-        const txnsRes = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`);
+        const txnsRes = await fetchWithAuth(`/api/portfolios/${activePortfolioId}/transactions`);
         const txnsData = await txnsRes.json();
         if (Array.isArray(txnsData)) {
           setTransactions(txnsData);
@@ -206,12 +238,12 @@ export default function Portfolios() {
         setFormAmount('');
         setFormAssetId('');
       } else {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ detail: 'Error en el servidor' }));
         alert(`Error al guardar: ${errorData.detail || 'Ocurrió un error'}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Error de conexión");
+      alert('Error de conexión al intentar guardar.');
     } finally {
       setSubmitting(false);
     }
@@ -242,41 +274,94 @@ export default function Portfolios() {
   };
 
   const assetSummaries: Record<string, AssetSummary> = {};
-  
-  transactions.forEach(txn => {
-    const actualAssetId = txn.asset_id || 'wallet-cash-global';
-    
-    if (!assetSummaries[actualAssetId]) {
-      assetSummaries[actualAssetId] = {
-        asset_id: actualAssetId,
-        symbol: txn.asset_id ? (txn.asset_symbol || 'Desc') : 'BILLETERA',
-        name: txn.asset_id ? (txn.asset_name || txn.asset_symbol || 'Desc') : 'Liquidez General',
+
+  const getOrCreateAsset = (txn: Transaction, id: string) => {
+    if (!assetSummaries[id]) {
+      assetSummaries[id] = {
+        asset_id: id,
+        symbol: txn.asset_symbol || (id === 'wallet-cash-global' ? 'BILLETERA' : 'ACTIVO'),
+        name: txn.asset_name || txn.asset_symbol || (id === 'wallet-cash-global' ? 'Liquidez General' : 'Activo'),
         quantity: 0,
         totalCost: 0,
         savedCash: 0,
         transactions: []
       };
     }
-    
-    const asset = assetSummaries[actualAssetId];
-    asset.transactions.push(txn);
-    
-    if (txn.type === 'BUY') {
-      asset.quantity += Number(txn.quantity || 0);
-      asset.totalCost += Number(txn.amount || 0);
-    } else if (txn.type === 'SELL') {
-      asset.quantity -= Number(txn.quantity || 0);
-      asset.totalCost -= Number(txn.amount || 0);
-    } else if (txn.type === 'DEPOSIT') {
-      asset.savedCash += Number(txn.amount || 0);
+    return assetSummaries[id];
+  };
+
+  const sortedTxns = [...transactions].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  let globalReservedCash = 0;
+
+  sortedTxns.forEach(txn => {
+    const amount = Number(txn.amount || 0);
+    const qty = Number(txn.quantity || 0);
+
+    if (txn.type === 'DEPOSIT') {
+      if (txn.asset_id) {
+        const asset = getOrCreateAsset(txn, txn.asset_id);
+        asset.savedCash += amount;
+        asset.transactions.push(txn);
+      } else {
+        globalReservedCash += amount;
+      }
     } else if (txn.type === 'WITHDRAW') {
-      asset.savedCash -= Number(txn.amount || 0);
+      if (txn.asset_id) {
+        const asset = getOrCreateAsset(txn, txn.asset_id);
+        asset.savedCash = Math.max(0, asset.savedCash - amount);
+        asset.transactions.push(txn);
+      } else {
+        globalReservedCash = Math.max(0, globalReservedCash - amount);
+      }
+    } else if (txn.type === 'BUY') {
+      if (!txn.asset_id) return;
+      const asset = getOrCreateAsset(txn, txn.asset_id);
+      asset.quantity += qty;
+      asset.totalCost += amount;
+      asset.transactions.push(txn);
+
+      let rem = amount;
+      const fromAsset = Math.min(asset.savedCash, rem);
+      asset.savedCash -= fromAsset;
+      rem -= fromAsset;
+
+      if (rem > 0 && globalReservedCash > 0) {
+        const fromGlobal = Math.min(globalReservedCash, rem);
+        globalReservedCash -= fromGlobal;
+      }
+    } else if (txn.type === 'SELL') {
+      if (!txn.asset_id) return;
+      const asset = getOrCreateAsset(txn, txn.asset_id);
+      asset.quantity = Math.max(0, asset.quantity - qty);
+      asset.totalCost = Math.max(0, asset.totalCost - amount);
+      asset.transactions.push(txn);
     }
   });
 
-  const assets = Object.values(assetSummaries).filter(a => a.quantity > 0 || Math.max(0, a.savedCash - a.totalCost) > 0);
+  if (globalReservedCash > 0) {
+    if (!assetSummaries['wallet-cash-global']) {
+      assetSummaries['wallet-cash-global'] = {
+        asset_id: 'wallet-cash-global',
+        symbol: 'BILLETERA',
+        name: 'Liquidez General',
+        quantity: 0,
+        totalCost: 0,
+        savedCash: globalReservedCash,
+        transactions: []
+      };
+    } else {
+      assetSummaries['wallet-cash-global'].savedCash = globalReservedCash;
+    }
+  } else {
+    delete assetSummaries['wallet-cash-global'];
+  }
+
+  const assets = Object.values(assetSummaries).filter(a => a.quantity > 0 || a.savedCash > 0);
   const totalInvertido = assets.reduce((acc, a) => acc + a.totalCost, 0);
-  const totalGuardado = assets.reduce((acc, a) => acc + Math.max(0, a.savedCash - a.totalCost), 0);
+  const totalGuardado = assets.reduce((acc, a) => acc + a.savedCash, 0);
   const totalWalletValue = totalInvertido + totalGuardado;
 
   const formatCurrency = (val: number) => {
@@ -583,7 +668,7 @@ export default function Portfolios() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {assets.map(asset => {
             const avgPrice = getAverageBuyPrice(asset);
-            const liquidez = Math.max(0, asset.savedCash - asset.totalCost);
+            const liquidez = asset.savedCash;
             const isComprado = asset.quantity > 0;
             return (
               <div key={asset.asset_id} className="bg-black border border-white rounded-xl p-5 hover:border-gray-400 transition-all hover:shadow-lg group">

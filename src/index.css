@@ -55,3 +55,11 @@ select,
 textarea {
   touch-action: manipulation;
 }
+
+@media (max-width: 767px) {
+  .mobile-pwa-header {
+    padding-top: max(48px, env(safe-area-inset-top, 48px));
+    min-height: 96px;
+    padding-bottom: 1rem;
+  }
+}

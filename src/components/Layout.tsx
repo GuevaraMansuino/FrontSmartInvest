@@ -38,7 +38,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Toast Notification over Sidebar/Screen */}
       {toastMessage && (
         <div
-          style={{ top: 'max(84px, calc(env(safe-area-inset-top, 50px) + 28px))' }}
+          style={{ top: 'max(64px, calc(env(safe-area-inset-top, 44px) + 14px))' }}
           className="fixed left-1/2 -translate-x-1/2 md:left-auto md:right-8 md:translate-x-0 z-[100] max-w-md w-[94%] md:w-auto animate-fade-in duration-300"
         >
           <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-neutral-900/95 backdrop-blur-md border border-emerald-500/50 shadow-2xl shadow-emerald-500/25 text-white">
@@ -232,10 +232,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content Area */}
       <main className="flex-1 overflow-auto flex flex-col min-w-0">
         {/* Responsive Header */}
-        <header
-          style={{ paddingTop: 'max(48px, env(safe-area-inset-top, 48px))' }}
-          className="min-h-[96px] md:min-h-20 pb-4 md:py-0 bg-black/95 backdrop-blur-md border-b border-white/20 flex items-center px-4 sm:px-6 md:px-8 sticky top-0 z-40 shadow-lg"
-        >
+        <header className="mobile-pwa-header md:min-h-16 md:py-0 bg-black/95 backdrop-blur-md border-b border-white/20 flex items-center px-4 sm:px-6 md:px-8 sticky top-0 z-40 shadow-lg">
           <div className="flex items-center justify-between w-full min-w-0 gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button

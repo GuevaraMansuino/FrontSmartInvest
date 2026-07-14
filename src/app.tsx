@@ -34,40 +34,107 @@ function Dashboard() {
         }
         if (!res.ok) throw new Error('Error cargando portafolios')
         const portfolios = await res.json()
-
         if (Array.isArray(portfolios) && portfolios.length > 0) {
-          const assetSummaries: Record<string, { totalCost: number; savedCash: number; quantity: number }> = {}
+          const assetSummaries: Record<string, any> = {}
 
+          const allTxns: any[] = [];
           for (const p of portfolios) {
             const txRes = await fetchWithAuth(`/api/portfolios/${p.id}/transactions`)
             if (txRes.ok) {
               const txs = await txRes.json()
               if (Array.isArray(txs)) {
-                txs.forEach((txn: any) => {
-                  const actualAssetId = txn.asset_id || 'wallet-cash-global'
-                  if (!assetSummaries[actualAssetId]) {
-                    assetSummaries[actualAssetId] = { totalCost: 0, savedCash: 0, quantity: 0 }
-                  }
-                  const asset = assetSummaries[actualAssetId]
-                  if (txn.type === 'BUY') {
-                    asset.quantity += Number(txn.quantity || 0)
-                    asset.totalCost += Number(txn.amount || 0)
-                  } else if (txn.type === 'SELL') {
-                    asset.quantity -= Number(txn.quantity || 0)
-                    asset.totalCost -= Number(txn.amount || 0)
-                  } else if (txn.type === 'DEPOSIT') {
-                    asset.savedCash += Number(txn.amount || 0)
-                  } else if (txn.type === 'WITHDRAW') {
-                    asset.savedCash -= Number(txn.amount || 0)
-                  }
-                })
+                allTxns.push(...txs)
               }
             }
           }
 
-          const assets = Object.values(assetSummaries).filter(a => a.quantity > 0 || Math.max(0, a.savedCash - a.totalCost) > 0)
-          const totalInv = assets.reduce((acc, a) => acc + a.totalCost, 0)
-          const totalGuard = assets.reduce((acc, a) => acc + Math.max(0, a.savedCash - a.totalCost), 0)
+          const getOrCreateAsset = (txn: any, id: string) => {
+            if (!assetSummaries[id]) {
+              assetSummaries[id] = {
+                asset_id: id,
+                symbol: txn.asset_symbol || (id === 'wallet-cash-global' ? 'BILLETERA' : 'ACTIVO'),
+                name: txn.asset_name || txn.asset_symbol || (id === 'wallet-cash-global' ? 'Liquidez General' : 'Activo'),
+                quantity: 0,
+                totalCost: 0,
+                savedCash: 0,
+                transactions: []
+              };
+            }
+            return assetSummaries[id];
+          };
+
+          const sortedTxns = [...allTxns].sort(
+            (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          );
+
+          let globalReservedCash = 0;
+
+          sortedTxns.forEach((txn: any) => {
+            const amount = Number(txn.amount || 0);
+            const qty = Number(txn.quantity || 0);
+
+            if (txn.type === 'DEPOSIT') {
+              if (txn.asset_id) {
+                const asset = getOrCreateAsset(txn, txn.asset_id);
+                asset.savedCash += amount;
+                asset.transactions.push(txn);
+              } else {
+                globalReservedCash += amount;
+              }
+            } else if (txn.type === 'WITHDRAW') {
+              if (txn.asset_id) {
+                const asset = getOrCreateAsset(txn, txn.asset_id);
+                asset.savedCash = Math.max(0, asset.savedCash - amount);
+                asset.transactions.push(txn);
+              } else {
+                globalReservedCash = Math.max(0, globalReservedCash - amount);
+              }
+            } else if (txn.type === 'BUY') {
+              if (!txn.asset_id) return;
+              const asset = getOrCreateAsset(txn, txn.asset_id);
+              asset.quantity += qty;
+              asset.totalCost += amount;
+              asset.transactions.push(txn);
+
+              let rem = amount;
+              const fromAsset = Math.min(asset.savedCash, rem);
+              asset.savedCash -= fromAsset;
+              rem -= fromAsset;
+
+              if (rem > 0 && globalReservedCash > 0) {
+                const fromGlobal = Math.min(globalReservedCash, rem);
+                globalReservedCash -= fromGlobal;
+              }
+            } else if (txn.type === 'SELL') {
+              if (!txn.asset_id) return;
+              const asset = getOrCreateAsset(txn, txn.asset_id);
+              asset.quantity = Math.max(0, asset.quantity - qty);
+              asset.totalCost = Math.max(0, asset.totalCost - amount);
+              asset.transactions.push(txn);
+            }
+          });
+
+          if (globalReservedCash > 0) {
+            if (!assetSummaries['wallet-cash-global']) {
+              assetSummaries['wallet-cash-global'] = {
+                asset_id: 'wallet-cash-global',
+                symbol: 'BILLETERA',
+                name: 'Liquidez General',
+                quantity: 0,
+                totalCost: 0,
+                savedCash: globalReservedCash,
+                transactions: []
+              };
+            } else {
+              assetSummaries['wallet-cash-global'].savedCash = globalReservedCash;
+            }
+          } else {
+            delete assetSummaries['wallet-cash-global'];
+          }
+
+          const assets = Object.values(assetSummaries).filter((a: any) => a.quantity > 0 || a.savedCash > 0)
+          const totalInv = assets.reduce((acc: number, a: any) => acc + a.totalCost, 0)
+          const totalGuard = assets.reduce((acc: number, a: any) => acc + a.savedCash, 0)
           const totalWall = totalInv + totalGuard
 
           setTotalInvested(totalInv)
