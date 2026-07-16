@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, TrendingUp, Wallet, Settings, LogOut, Shield, Home as HomeIcon, Lock } from 'lucide-react'
+import { Menu, X, TrendingUp, Wallet, Target, Settings, LogOut, Shield, Home as HomeIcon, Lock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AuthModal } from './AuthModal'
 
@@ -19,6 +19,7 @@ export default function Layout({ children }: LayoutProps) {
     { icon: HomeIcon, label: 'Inicio', href: '/', requiresAuth: false },
     { icon: TrendingUp, label: 'Dashboard', href: '/dashboard', requiresAuth: false },
     { icon: Wallet, label: 'Portfolios', href: '/portfolios', requiresAuth: true },
+    { icon: Target, label: 'Estrategias', href: '/strategies', requiresAuth: true },
     { icon: Settings, label: 'Configuración', href: '/settings', requiresAuth: true },
   ]
 

@@ -114,6 +114,10 @@ export default function Portfolios() {
     setFormAssetId(id);
     setAssetDropdownOpen(false);
     setAssetSearch("");
+    const resCash = id ? assetSummaries[id]?.savedCash || 0 : 0;
+    if (resCash > 0 && formType === "BUY") {
+      setFormAmount(resCash.toFixed(2));
+    }
   };
 
   useEffect(() => {
@@ -122,11 +126,24 @@ export default function Portfolios() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {
-          setPortfolios(data);
           if (data.length > 0) {
+            setPortfolios(data);
             setSelectedPortfolioId(data[0].id);
           } else {
-            setLoading(false);
+            fetchWithAuth("/api/portfolios", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: "Mi Cartera Principal" }),
+            })
+              .then((res) => (res.ok ? res.json() : null))
+              .then((newPort) => {
+                if (newPort) {
+                  setPortfolios([newPort]);
+                  setSelectedPortfolioId(newPort.id);
+                }
+                setLoading(false);
+              })
+              .catch(() => setLoading(false));
           }
         } else {
           setPortfolios([]);
@@ -581,6 +598,37 @@ export default function Portfolios() {
                 )}
               </div>
 
+              {formType === "BUY" && formAssetId && (assetSummaries[formAssetId]?.savedCash || 0) > 0 && (
+                <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3 animate-fade-in my-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 shrink-0">
+                      <Check className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                        Reserva de Estrategia Disponible
+                      </p>
+                      <p className="text-sm font-extrabold text-white">
+                        {formatCurrency(assetSummaries[formAssetId].savedCash)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const resAmt = assetSummaries[formAssetId].savedCash;
+                      setFormAmount(resAmt.toFixed(2));
+                      if (formPrice && parseFloat(formPrice) > 0) {
+                        setFormQuantity((resAmt / parseFloat(formPrice)).toFixed(6));
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition shadow-sm shrink-0"
+                  >
+                    Usar Reserva
+                  </button>
+                </div>
+              )}
+
               {formType === "BUY" ? (
                 <>
                   <div>
@@ -610,7 +658,14 @@ export default function Portfolios() {
                       className="w-full bg-black border border-gray-700 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-white transition-colors"
                       placeholder="Ej: 450.50"
                       value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value)}
+                      onChange={(e) => {
+                        setFormPrice(e.target.value);
+                        const p = parseFloat(e.target.value);
+                        const a = parseFloat(formAmount);
+                        if (!isNaN(p) && p > 0 && !isNaN(a) && a > 0) {
+                          setFormQuantity((a / p).toFixed(6));
+                        }
+                      }}
                       required
                     />
                   </div>
@@ -621,8 +676,7 @@ export default function Portfolios() {
                     </span>
                     <span className="text-lg font-bold text-white">
                       {formatCurrency(
-                        parseFloat(formQuantity || "0") *
-                          parseFloat(formPrice || "0"),
+                        parseFloat(formQuantity || "0") * parseFloat(formPrice || "0") || parseFloat(formAmount || "0"),
                       )}
                     </span>
                   </div>
@@ -844,10 +898,27 @@ export default function Portfolios() {
                       <span className="text-sm text-gray-400">
                         Plata Reservada
                       </span>
-                      <span className="text-sm font-bold text-blue-400">
+                      <span className="text-sm font-bold text-emerald-400">
                         {formatCurrency(liquidez)}
                       </span>
                     </div>
+                  )}
+                  {liquidez > 0 && (
+                    <button
+                      onClick={() => {
+                        setEditingTxnId(null);
+                        setFormAssetId(asset.asset_id);
+                        setFormType("BUY");
+                        setFormAmount(liquidez.toString());
+                        setFormQuantity("");
+                        setFormPrice("");
+                        setShowAddModal(true);
+                      }}
+                      className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold text-xs border border-emerald-500/30 transition flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Comprar Nómina con Reserva ({formatCurrency(liquidez)})
+                    </button>
                   )}
                 </div>
               </div>

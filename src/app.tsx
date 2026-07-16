@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Home from './components/Home'
 import Watchlist from './components/Watchlist'
 import Portfolios from './components/Portfolios'
+import Strategies from './components/Strategies'
 import Settings from './components/Settings'
 import CronStatusBadge from './components/CronStatusBadge'
 import { getApiUrl } from './utils/api'
@@ -268,6 +269,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/portfolios" element={<Portfolios />} />
+            <Route path="/strategies" element={<Strategies />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>
