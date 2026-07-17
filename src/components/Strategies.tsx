@@ -67,7 +67,9 @@ export default function Strategies() {
   const { isAuthenticated, setAuthModalOpen } = useAuth();
 
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(
+    null,
+  );
   const [strategyItems, setStrategyItems] = useState<StrategyItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [assetsList, setAssetsList] = useState<AssetDef[]>([]);
@@ -108,7 +110,10 @@ export default function Strategies() {
   const [submittingBuy, setSubmittingBuy] = useState(false);
 
   // Toast
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const showToastMsg = (msg: string, type: "success" | "error" = "success") => {
     setToast({ message: msg, type });
@@ -126,8 +131,9 @@ export default function Strategies() {
             Para acceder a Estrategias debes iniciar sesión
           </h2>
           <p className="text-sm text-gray-400">
-            Inicia sesión o crea tu cuenta gratuita para configurar tu presupuesto mensual,
-            diseñar la distribución ideal de tus activos y automatizar depósitos.
+            Inicia sesión o crea tu cuenta gratuita para configurar tu
+            presupuesto mensual, diseñar la distribución ideal de tus activos y
+            automatizar depósitos.
           </p>
         </div>
         <button
@@ -140,7 +146,9 @@ export default function Strategies() {
     );
   }
 
-  const selectedPortfolio = portfolios.find((p) => p.id === selectedPortfolioId);
+  const selectedPortfolio = portfolios.find(
+    (p) => p.id === selectedPortfolioId,
+  );
   const currentBudget = Number(monthlyBudgetInput || "0");
 
   useEffect(() => {
@@ -148,7 +156,9 @@ export default function Strategies() {
     setLoading(true);
 
     Promise.all([
-      fetchWithAuth("/api/portfolios").then((res) => (res.ok ? res.json() : [])),
+      fetchWithAuth("/api/portfolios").then((res) =>
+        res.ok ? res.json() : [],
+      ),
       fetchWithAuth("/api/assets").then((res) => (res.ok ? res.json() : [])),
     ])
       .then(([portsData, assetsData]) => {
@@ -156,7 +166,9 @@ export default function Strategies() {
           if (portsData.length > 0) {
             setPortfolios(portsData);
             setSelectedPortfolioId(portsData[0].id);
-            setMonthlyBudgetInput(portsData[0].monthly_amount?.toString() || "0");
+            setMonthlyBudgetInput(
+              portsData[0].monthly_amount?.toString() || "0",
+            );
           } else {
             fetchWithAuth("/api/portfolios", {
               method: "POST",
@@ -168,7 +180,9 @@ export default function Strategies() {
                 if (newPort) {
                   setPortfolios([newPort]);
                   setSelectedPortfolioId(newPort.id);
-                  setMonthlyBudgetInput(newPort.monthly_amount?.toString() || "0");
+                  setMonthlyBudgetInput(
+                    newPort.monthly_amount?.toString() || "0",
+                  );
                 }
                 setLoading(false);
               })
@@ -196,11 +210,11 @@ export default function Strategies() {
     }
 
     Promise.all([
-      fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/strategy`).then((res) =>
-        res.ok ? res.json() : [],
+      fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/strategy`).then(
+        (res) => (res.ok ? res.json() : []),
       ),
-      fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`).then((res) =>
-        res.ok ? res.json() : [],
+      fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`).then(
+        (res) => (res.ok ? res.json() : []),
       ),
     ])
       .then(([stratData, txnsData]) => {
@@ -209,7 +223,9 @@ export default function Strategies() {
           const buffer = stratData.map((item) => ({
             asset_id: item.asset_id,
             percentage: item.percentage.toString(),
-            target_amount: item.target_amount ? item.target_amount.toString() : "",
+            target_amount: item.target_amount
+              ? item.target_amount.toString()
+              : "",
             symbol: item.asset_symbol || "???",
             name: item.asset_name || "Activo",
           }));
@@ -293,15 +309,25 @@ export default function Strategies() {
 
     setSavingBudget(true);
     try {
-      const res = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: selectedPortfolio.name, monthly_amount: val }),
-      });
+      const res = await fetchWithAuth(
+        `/api/portfolios/${selectedPortfolioId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: selectedPortfolio.name,
+            monthly_amount: val,
+          }),
+        },
+      );
       if (res.ok) {
         const updated = await res.json();
         setPortfolios((prev) =>
-          prev.map((p) => (p.id === updated.id ? { ...p, monthly_amount: updated.monthly_amount } : p)),
+          prev.map((p) =>
+            p.id === updated.id
+              ? { ...p, monthly_amount: updated.monthly_amount }
+              : p,
+          ),
         );
         showToastMsg("Presupuesto mensual actualizado correctamente.");
       } else {
@@ -316,7 +342,10 @@ export default function Strategies() {
 
   const handleAddAssetToStrategy = (asset: AssetDef) => {
     if (editedItems.some((item) => item.asset_id === asset.id)) {
-      showToastMsg(`El activo ${asset.symbol} ya está en la estrategia.`, "error");
+      showToastMsg(
+        `El activo ${asset.symbol} ya está en la estrategia.`,
+        "error",
+      );
       return;
     }
     setEditedItems((prev) => [
@@ -378,12 +407,18 @@ export default function Strategies() {
     if (!selectedPortfolioId) return;
 
     if (totalAllocatedPct > 100.01) {
-      showToastMsg(`La suma de porcentajes (${totalAllocatedPct.toFixed(2)}%) supera el 100%.`, "error");
+      showToastMsg(
+        `La suma de porcentajes (${totalAllocatedPct.toFixed(2)}%) supera el 100%.`,
+        "error",
+      );
       return;
     }
 
     if (editedItems.length === 0) {
-      showToastMsg("Añade al menos un activo para guardar la estrategia.", "error");
+      showToastMsg(
+        "Añade al menos un activo para guardar la estrategia.",
+        "error",
+      );
       return;
     }
 
@@ -397,11 +432,14 @@ export default function Strategies() {
         })),
       };
 
-      const res = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/strategy`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetchWithAuth(
+        `/api/portfolios/${selectedPortfolioId}/strategy`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (res.ok) {
         const newData = await res.json();
@@ -409,7 +447,9 @@ export default function Strategies() {
         setHasUnsavedChanges(false);
         showToastMsg("Estrategia objetivo guardada con éxito.");
       } else {
-        const errData = await res.json().catch(() => ({ detail: "Error del servidor" }));
+        const errData = await res
+          .json()
+          .catch(() => ({ detail: "Error del servidor" }));
         showToastMsg(errData.detail || "Error al guardar estrategia.", "error");
       }
     } catch (err) {
@@ -422,43 +462,60 @@ export default function Strategies() {
   const handleDepositStrategy = async () => {
     if (!selectedPortfolioId) return;
 
-    const amt = customDepositAmount ? parseFloat(customDepositAmount) : currentBudget;
+    const amt = customDepositAmount
+      ? parseFloat(customDepositAmount)
+      : currentBudget;
     if (isNaN(amt) || amt <= 0) {
       showToastMsg("El monto a depositar debe ser mayor a $0.", "error");
       return;
     }
 
     if (strategyItems.length === 0 && !hasUnsavedChanges) {
-      showToastMsg("Configura y guarda una estrategia antes de realizar el depósito.", "error");
+      showToastMsg(
+        "Configura y guarda una estrategia antes de realizar el depósito.",
+        "error",
+      );
       return;
     }
 
     if (hasUnsavedChanges) {
-      showToastMsg("Guarda los cambios de tu estrategia antes de depositar.", "error");
+      showToastMsg(
+        "Guarda los cambios de tu estrategia antes de depositar.",
+        "error",
+      );
       return;
     }
 
     setDepositing(true);
     try {
       const payload = customDepositAmount ? { amount: amt } : {};
-      const res = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/strategy/deposit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetchWithAuth(
+        `/api/portfolios/${selectedPortfolioId}/strategy/deposit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (res.ok) {
         const newTxns = await res.json();
-        const txnsRes = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`);
+        const txnsRes = await fetchWithAuth(
+          `/api/portfolios/${selectedPortfolioId}/transactions`,
+        );
         if (txnsRes.ok) {
           const freshTxns = await txnsRes.json();
           setTransactions(freshTxns);
         }
         setShowDepositModal(false);
         setCustomDepositAmount("");
-        showToastMsg(`¡Depósito de $${amt.toFixed(2)} dividido y reservado entre tus activos!`);
+        showToastMsg(
+          `¡Depósito de $${amt.toFixed(2)} dividido y reservado entre tus activos!`,
+        );
       } else {
-        const errData = await res.json().catch(() => ({ detail: "Error en el servidor" }));
+        const errData = await res
+          .json()
+          .catch(() => ({ detail: "Error en el servidor" }));
         showToastMsg(errData.detail || "Error al realizar depósito.", "error");
       }
     } catch (err) {
@@ -517,22 +574,27 @@ export default function Strategies() {
 
     setSubmittingBuy(true);
     try {
-      const res = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "BUY",
-          asset_id: buyAssetId,
-          quantity: qty,
-          price: price,
-          amount: qty * price,
-          date: new Date().toISOString(),
-          notes: "Nómina ejecutada desde Estrategias",
-        }),
-      });
+      const res = await fetchWithAuth(
+        `/api/portfolios/${selectedPortfolioId}/transactions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "BUY",
+            asset_id: buyAssetId,
+            quantity: qty,
+            price: price,
+            amount: qty * price,
+            date: new Date().toISOString(),
+            notes: "Nómina ejecutada desde Estrategias",
+          }),
+        },
+      );
 
       if (res.ok) {
-        const txnsRes = await fetchWithAuth(`/api/portfolios/${selectedPortfolioId}/transactions`);
+        const txnsRes = await fetchWithAuth(
+          `/api/portfolios/${selectedPortfolioId}/transactions`,
+        );
         if (txnsRes.ok) {
           setTransactions(await txnsRes.json());
         }
@@ -541,9 +603,13 @@ export default function Strategies() {
         setBuyQuantity("");
         setBuyPrice("");
         setBuyAmount("");
-        showToastMsg("¡Nómina comprada! Monto descontado automáticamente de la reserva.");
+        showToastMsg(
+          "¡Nómina comprada! Monto descontado automáticamente de la reserva.",
+        );
       } else {
-        const errData = await res.json().catch(() => ({ detail: "Error del servidor" }));
+        const errData = await res
+          .json()
+          .catch(() => ({ detail: "Error del servidor" }));
         showToastMsg(errData.detail || "Error al comprar nómina.", "error");
       }
     } catch (err) {
@@ -568,7 +634,9 @@ export default function Strategies() {
   );
 
   const activeBuyAsset = assetsList.find((a) => a.id === buyAssetId);
-  const activeBuyReservedCash = buyAssetId ? assetPositions[buyAssetId]?.savedCash || 0 : 0;
+  const activeBuyReservedCash = buyAssetId
+    ? assetPositions[buyAssetId]?.savedCash || 0
+    : 0;
 
   if (loading && portfolios.length === 0) {
     return (
@@ -597,7 +665,10 @@ export default function Strategies() {
               <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
             )}
             <p className="text-sm font-medium">{toast.message}</p>
-            <button onClick={() => setToast(null)} className="ml-auto text-gray-400 hover:text-white">
+            <button
+              onClick={() => setToast(null)}
+              className="ml-auto text-gray-400 hover:text-white"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -616,14 +687,17 @@ export default function Strategies() {
             </h1>
           </div>
           <p className="text-sm text-gray-400 mt-1">
-            Configura tus montos mensuales y asigna presupuestos por activo con reservas automáticas.
+            Configura tus montos mensuales y asigna presupuestos por activo con
+            reservas automáticas.
           </p>
         </div>
 
         {portfolios.length > 0 && (
           <div className="flex items-center gap-3 bg-gray-900/90 border border-gray-800 rounded-2xl px-4 py-2 shadow-lg">
             <Wallet className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span className="text-xs text-gray-400 font-medium uppercase">Cartera:</span>
+            <span className="text-xs text-gray-400 font-medium uppercase">
+              Cartera:
+            </span>
             <select
               value={selectedPortfolioId || ""}
               onChange={(e) => setSelectedPortfolioId(e.target.value)}
@@ -642,9 +716,12 @@ export default function Strategies() {
       {portfolios.length === 0 ? (
         <div className="p-8 rounded-2xl bg-gray-900/40 border border-gray-800 text-center space-y-4 max-w-lg mx-auto">
           <AlertCircle className="w-10 h-10 text-amber-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No tienes carteras creadas</h3>
+          <h3 className="text-lg font-bold text-white">
+            No tienes carteras creadas
+          </h3>
           <p className="text-sm text-gray-400">
-            Debes crear un portafolio desde la sección de Portfolios antes de configurar tu estrategia.
+            Debes crear un portafolio desde la sección de Portfolios antes de
+            configurar tu estrategia.
           </p>
         </div>
       ) : (
@@ -699,13 +776,20 @@ export default function Strategies() {
               {/* Progress bar info */}
               <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
                 <div className="flex justify-between items-center text-xs sm:text-sm">
-                  <span className="text-gray-400 font-medium">Asignación de Activos en Estrategia:</span>
+                  <span className="text-gray-400 font-medium">
+                    Asignación de Activos en Estrategia:
+                  </span>
                   <span
                     className={`font-bold ${
-                      totalAllocatedPct > 100 ? "text-rose-400" : totalAllocatedPct === 100 ? "text-emerald-400" : "text-amber-400"
+                      totalAllocatedPct > 100
+                        ? "text-rose-400"
+                        : totalAllocatedPct === 100
+                          ? "text-emerald-400"
+                          : "text-amber-400"
                     }`}
                   >
-                    {totalAllocatedPct.toFixed(2)}% ({formatCurrency(totalAllocatedAmt)}) de{" "}
+                    {totalAllocatedPct.toFixed(2)}% (
+                    {formatCurrency(totalAllocatedAmt)}) de{" "}
                     {formatCurrency(currentBudget)}
                   </span>
                 </div>
@@ -723,7 +807,8 @@ export default function Strategies() {
                 </div>
                 {totalAllocatedPct > 100 && (
                   <p className="text-xs text-rose-400 font-semibold flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" /> La asignación supera el 100% del presupuesto.
+                    <AlertCircle className="w-3.5 h-3.5" /> La asignación supera
+                    el 100% del presupuesto.
                   </p>
                 )}
               </div>
@@ -747,14 +832,18 @@ export default function Strategies() {
                   </div>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                  Al depositar, el monto se divide automáticamente entre tus acciones o CEDEARs según su porcentaje y queda reservado en su billetera listos para comprar.
+                  Al depositar, el monto se divide automáticamente entre tus
+                  acciones o CEDEARs según su porcentaje y queda reservado en su
+                  billetera listos para comprar.
                 </p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-emerald-500/20 space-y-3">
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Monto a distribuir:</span>
-                  <span className="text-white font-bold">{formatCurrency(currentBudget)}</span>
+                  <span className="text-white font-bold">
+                    {formatCurrency(currentBudget)}
+                  </span>
                 </div>
                 <button
                   onClick={() => setShowDepositModal(true)}
@@ -776,7 +865,8 @@ export default function Strategies() {
                   Distribución Objetivo de Activos
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-400">
-                  Ajusta el porcentaje (%) o monto fijo ($) para cada nómina. Al guardar, se aplicará al próximo depósito.
+                  Ajusta el porcentaje (%) o monto fijo ($) para cada nómina. Al
+                  guardar, se aplicará al próximo depósito.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -834,14 +924,19 @@ export default function Strategies() {
                         totalCost: 0,
                       };
                       return (
-                        <tr key={item.asset_id} className="hover:bg-gray-950/60 transition-colors">
+                        <tr
+                          key={item.asset_id}
+                          className="hover:bg-gray-950/60 transition-colors"
+                        >
                           <td className="py-4 pl-3">
                             <div className="flex items-center gap-3">
                               <span className="px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-800 text-white font-extrabold text-xs">
                                 {item.symbol}
                               </span>
                               <div>
-                                <p className="font-bold text-white text-sm">{item.name}</p>
+                                <p className="font-bold text-white text-sm">
+                                  {item.name}
+                                </p>
                               </div>
                             </div>
                           </td>
@@ -854,7 +949,9 @@ export default function Strategies() {
                                 min="0"
                                 max="100"
                                 value={item.percentage}
-                                onChange={(e) => handlePercentageChange(index, e.target.value)}
+                                onChange={(e) =>
+                                  handlePercentageChange(index, e.target.value)
+                                }
                                 className="w-full bg-black border border-gray-800 focus:border-emerald-500 text-white font-bold text-sm px-3 py-2 rounded-xl pr-8 focus:outline-none transition"
                                 placeholder="0"
                               />
@@ -872,7 +969,9 @@ export default function Strategies() {
                                 step="0.01"
                                 min="0"
                                 value={item.target_amount}
-                                onChange={(e) => handleAmountChange(index, e.target.value)}
+                                onChange={(e) =>
+                                  handleAmountChange(index, e.target.value)
+                                }
                                 className="w-full bg-black border border-gray-800 focus:border-emerald-500 text-white font-bold text-sm pl-7 pr-3 py-2 rounded-xl focus:outline-none transition"
                                 placeholder="0.00"
                               />
@@ -883,7 +982,9 @@ export default function Strategies() {
                             <div className="flex items-center gap-2">
                               <span
                                 className={`font-extrabold text-sm ${
-                                  pos.savedCash > 0 ? "text-emerald-400" : "text-gray-500"
+                                  pos.savedCash > 0
+                                    ? "text-emerald-400"
+                                    : "text-gray-500"
                                 }`}
                               >
                                 {formatCurrency(pos.savedCash)}
@@ -910,7 +1011,9 @@ export default function Strategies() {
                           <td className="py-4 pr-3 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => openBuyModalForAsset(item.asset_id)}
+                                onClick={() =>
+                                  openBuyModalForAsset(item.asset_id)
+                                }
                                 className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold text-xs border border-emerald-500/30 transition flex items-center gap-1.5"
                                 title="Ejecutar Compra con Reserva"
                               >
@@ -918,7 +1021,9 @@ export default function Strategies() {
                                 Comprar
                               </button>
                               <button
-                                onClick={() => handleRemoveFromStrategy(item.asset_id)}
+                                onClick={() =>
+                                  handleRemoveFromStrategy(item.asset_id)
+                                }
                                 className="p-2 rounded-xl text-gray-500 hover:text-rose-400 hover:bg-gray-900 transition"
                                 title="Quitar de estrategia"
                               >
@@ -942,7 +1047,9 @@ export default function Strategies() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-black border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-in">
             <div className="flex justify-between items-center p-5 border-b border-gray-800">
-              <h3 className="text-lg font-bold text-white">Añadir Activo a Estrategia</h3>
+              <h3 className="text-lg font-bold text-white">
+                Añadir Activo a Estrategia
+              </h3>
               <button
                 onClick={() => setShowAddAssetModal(false)}
                 className="text-gray-400 hover:text-white"
@@ -973,7 +1080,9 @@ export default function Strategies() {
                       <span className="px-2.5 py-1 rounded-md bg-gray-800 text-white font-bold text-xs">
                         {a.symbol}
                       </span>
-                      <span className="text-sm text-gray-300 font-medium">{a.name}</span>
+                      <span className="text-sm text-gray-300 font-medium">
+                        {a.name}
+                      </span>
                     </div>
                     <Plus className="w-4 h-4 text-emerald-400" />
                   </div>
@@ -997,9 +1106,12 @@ export default function Strategies() {
                 <PieChart className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-extrabold text-white">Depositar Presupuesto</h3>
+                <h3 className="text-xl font-extrabold text-white">
+                  Depositar Presupuesto
+                </h3>
                 <p className="text-xs text-gray-400 mt-1">
-                  El dinero se reservará en cada activo de tu estrategia listo para comprar nóminas.
+                  El dinero se reservará en cada activo de tu estrategia listo
+                  para comprar nóminas.
                 </p>
               </div>
 
@@ -1021,7 +1133,8 @@ export default function Strategies() {
                   />
                 </div>
                 <p className="text-[11px] text-gray-500">
-                  Por defecto utiliza el presupuesto mensual de {formatCurrency(currentBudget)}.
+                  Por defecto utiliza el presupuesto mensual de{" "}
+                  {formatCurrency(currentBudget)}.
                 </p>
               </div>
 
@@ -1088,7 +1201,11 @@ export default function Strategies() {
                     onClick={() => {
                       setBuyAmount(activeBuyReservedCash.toFixed(2));
                       if (buyPrice && parseFloat(buyPrice) > 0) {
-                        setBuyQuantity((activeBuyReservedCash / parseFloat(buyPrice)).toFixed(6));
+                        setBuyQuantity(
+                          (
+                            activeBuyReservedCash / parseFloat(buyPrice)
+                          ).toFixed(6),
+                        );
                       }
                     }}
                     className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition shadow-sm"
@@ -1160,7 +1277,9 @@ export default function Strategies() {
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-extrabold text-sm hover:from-emerald-400 hover:to-teal-400 transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
-                  {submittingBuy ? "Procesando..." : "Confirmar Compra y Descontar de Reserva"}
+                  {submittingBuy
+                    ? "Procesando..."
+                    : "Confirmar Compra y Descontar de Reserva"}
                 </button>
               </div>
             </form>
