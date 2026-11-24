@@ -16,6 +16,10 @@ import {
   AlertCircle,
   Save,
   CheckCircle2,
+  ArrowRightLeft,
+  Coins,
+  RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 import { fetchWithAuth } from "../utils/apiClient";
 import { useAuth } from "../context/AuthContext";
@@ -108,6 +112,14 @@ export default function Strategies() {
   const [buyPrice, setBuyPrice] = useState<string>("");
   const [buyAmount, setBuyAmount] = useState<string>("");
   const [submittingBuy, setSubmittingBuy] = useState(false);
+
+  // Manage Reserve Modal
+  const [showReserveModal, setShowReserveModal] = useState(false);
+  const [reserveModalAssetId, setReserveModalAssetId] = useState<string | null>(null);
+  const [reserveAction, setReserveAction] = useState<"TO_GLOBAL" | "TO_ASSET" | "CLEAR">("TO_GLOBAL");
+  const [reserveAmount, setReserveAmount] = useState<string>("");
+  const [reserveTargetAssetId, setReserveTargetAssetId] = useState<string>("");
+  const [submittingReserve, setSubmittingReserve] = useState(false);
 
   // Toast
   const [toast, setToast] = useState<{
@@ -298,6 +310,28 @@ export default function Strategies() {
       asset.totalCost = Math.max(0, asset.totalCost - amount);
     }
   });
+
+  const leftoverAssetsWithReserves = Object.entries(assetPositions)
+    .filter(
+      ([assetId, pos]) =>
+        pos.savedCash > 0 && !editedItems.some((i) => i.asset_id === assetId),
+    )
+    .map(([assetId, pos]) => {
+      const def = assetsList.find((a) => a.id === assetId);
+      return {
+        asset_id: assetId,
+        symbol: def?.symbol || "???",
+        name: def?.name || "Activo fuera de estrategia",
+        savedCash: pos.savedCash,
+        quantity: pos.quantity,
+        totalCost: pos.totalCost,
+      };
+    });
+
+  const totalReservesAllAssets = Object.values(assetPositions).reduce(
+    (sum, pos) => sum + (pos.savedCash || 0),
+    0,
+  );
 
   const handleSaveBudget = async () => {
     if (!selectedPortfolioId || !selectedPortfolio) return;
@@ -619,6 +653,92 @@ export default function Strategies() {
     }
   };
 
+  const openReserveModal = (
+    assetId: string | null,
+    defaultAction: "TO_GLOBAL" | "TO_ASSET" | "CLEAR" = "TO_GLOBAL",
+  ) => {
+    setReserveModalAssetId(assetId);
+    setReserveAction(defaultAction);
+    const available = assetId
+      ? assetPositions[assetId]?.savedCash || 0
+      : globalReservedCash;
+    setReserveAmount(available > 0 ? available.toFixed(2) : "");
+
+    const other = editedItems.find((i) => i.asset_id !== assetId);
+    setReserveTargetAssetId(other ? other.asset_id : "");
+    setShowReserveModal(true);
+  };
+
+  const handleManageReserveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPortfolioId) return;
+
+    const amt = parseFloat(reserveAmount);
+    if (reserveAction !== "CLEAR" && (isNaN(amt) || amt <= 0)) {
+      showToastMsg("Ingresa un monto válido mayor a $0.", "error");
+      return;
+    }
+    if (reserveAction === "TO_ASSET" && !reserveTargetAssetId) {
+      showToastMsg("Selecciona el activo de destino.", "error");
+      return;
+    }
+
+    setSubmittingReserve(true);
+    try {
+      const payload: {
+        action: string;
+        source_asset_id: string | null;
+        target_asset_id?: string | null;
+        amount: number | null;
+      } = {
+        action: reserveAction,
+        source_asset_id: reserveModalAssetId,
+        amount: !isNaN(amt) && amt > 0 ? amt : null,
+      };
+      if (reserveAction === "TO_ASSET") {
+        payload.target_asset_id = reserveTargetAssetId;
+      }
+
+      const res = await fetchWithAuth(
+        `/api/portfolios/${selectedPortfolioId}/strategy/reserves/manage`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (res.ok) {
+        const txnsRes = await fetchWithAuth(
+          `/api/portfolios/${selectedPortfolioId}/transactions`,
+        );
+        if (txnsRes.ok) {
+          setTransactions(await txnsRes.json());
+        }
+        setShowReserveModal(false);
+        showToastMsg(
+          reserveAction === "CLEAR"
+            ? "Reserva liberada / eliminada con éxito."
+            : reserveAction === "TO_GLOBAL"
+              ? "Fondos reasignados al Fondo General correctamente."
+              : "Fondos transferidos a la nómina de destino con éxito.",
+        );
+      } else {
+        const errData = await res
+          .json()
+          .catch(() => ({ detail: "Error del servidor" }));
+        showToastMsg(
+          errData.detail || "Error al gestionar la reserva.",
+          "error",
+        );
+      }
+    } catch {
+      showToastMsg("Error de conexión al gestionar la reserva.", "error");
+    } finally {
+      setSubmittingReserve(false);
+    }
+  };
+
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -857,6 +977,111 @@ export default function Strategies() {
             </div>
           </div>
 
+          {/* Section: Fondo General y Liquidez */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-gray-950 via-neutral-900 to-gray-950 border border-white/10 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4">
+              <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0">
+                <Coins className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Fondo General / Reserva Global
+                  </h3>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 font-extrabold border border-sky-500/30">
+                    {formatCurrency(globalReservedCash)}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 max-w-xl">
+                  Fondos no asignados a ninguna acción específica. Se consumen automáticamente en tus compras de nómina cuando el activo no tiene suficiente reserva propia, o puedes transferirlos a cualquier activo.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => openReserveModal(null, "TO_ASSET")}
+                disabled={globalReservedCash <= 0}
+                className="px-4 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 font-bold text-xs sm:text-sm border border-sky-500/30 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+                Distribuir a Nómina
+              </button>
+              {globalReservedCash > 0 && (
+                <button
+                  onClick={() => openReserveModal(null, "CLEAR")}
+                  className="px-3.5 py-2.5 rounded-xl bg-gray-900 hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 font-semibold text-xs border border-gray-800 transition flex items-center gap-1.5"
+                  title="Liberar o vaciar fondo general"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Vaciar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Banner: Reservas Remanentes en Activos Fuera de Estrategia */}
+          {leftoverAssetsWithReserves.length > 0 && (
+            <div className="p-5 sm:p-6 rounded-3xl bg-amber-950/20 border border-amber-500/30 shadow-xl space-y-4 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-bold text-white">
+                      Fondos guardados en activos fuera de tu estrategia actual
+                    </h4>
+                    <p className="text-xs text-gray-400">
+                      Tienes dinero de reservas anteriores atrapado en acciones que no están en tu lista objetivo. Puedes moverlos al Fondo General, a otra nómina o borrarlos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                {leftoverAssetsWithReserves.map((rem) => (
+                  <div
+                    key={rem.asset_id}
+                    className="p-3.5 rounded-2xl bg-black/60 border border-gray-800 flex items-center justify-between gap-3 hover:border-gray-700 transition"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-gray-800 text-white font-extrabold text-xs">
+                          {rem.symbol}
+                        </span>
+                        <span className="text-xs text-gray-400 truncate max-w-[120px]">
+                          {rem.name}
+                        </span>
+                      </div>
+                      <p className="text-sm font-extrabold text-amber-400 mt-1">
+                        {formatCurrency(rem.savedCash)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => openReserveModal(rem.asset_id, "TO_GLOBAL")}
+                        className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs transition border border-amber-500/30 flex items-center gap-1"
+                        title="Mover a Fondo General o reasignar"
+                      >
+                        <ArrowRightLeft className="w-3.5 h-3.5" />
+                        Reasignar
+                      </button>
+                      <button
+                        onClick={() => openReserveModal(rem.asset_id, "CLEAR")}
+                        className="p-1.5 rounded-xl text-gray-500 hover:text-rose-400 hover:bg-gray-900 transition"
+                        title="Borrar reserva remanente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Section 2: Configuración de la Estrategia */}
           <div className="p-6 sm:p-8 rounded-3xl bg-black border border-white/10 shadow-2xl space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -991,8 +1216,18 @@ export default function Strategies() {
                               </span>
                               {pos.savedCash > 0 && (
                                 <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-1.5 py-0.5 rounded-md font-bold">
-                                  Listo para comprar
+                                  Listo
                                 </span>
+                              )}
+                              {pos.savedCash > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => openReserveModal(item.asset_id, "TO_GLOBAL")}
+                                  className="p-1 rounded-md text-gray-400 hover:text-emerald-400 hover:bg-white/5 transition"
+                                  title="Reasignar a Fondo General, a otra nómina o borrar reserva"
+                                >
+                                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -1010,6 +1245,18 @@ export default function Strategies() {
 
                           <td className="py-4 pr-3 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              {pos.savedCash > 0 && (
+                                <button
+                                  onClick={() =>
+                                    openReserveModal(item.asset_id, "TO_GLOBAL")
+                                  }
+                                  className="px-2.5 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white font-semibold text-xs border border-gray-800 transition flex items-center gap-1"
+                                  title="Reasignar fondos de reserva o borrar"
+                                >
+                                  <ArrowRightLeft className="w-3 h-3 text-emerald-400" />
+                                  Reasignar
+                                </button>
+                              )}
                               <button
                                 onClick={() =>
                                   openBuyModalForAsset(item.asset_id)
@@ -1181,37 +1428,71 @@ export default function Strategies() {
 
             <form onSubmit={handleBuySubmit} className="p-5 space-y-4">
               {/* Reserved Cash Banner */}
-              <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 shrink-0">
-                    <Check className="w-4 h-4" />
+              <div className="space-y-2">
+                <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 shrink-0">
+                      <Check className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                        Reserva en {activeBuyAsset.symbol}
+                      </p>
+                      <p className="text-sm font-extrabold text-white">
+                        {formatCurrency(activeBuyReservedCash)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
-                      Reserva Disponible en Estrategia
-                    </p>
-                    <p className="text-sm font-extrabold text-white">
-                      {formatCurrency(activeBuyReservedCash)}
-                    </p>
-                  </div>
+                  {activeBuyReservedCash > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBuyAmount(activeBuyReservedCash.toFixed(2));
+                        if (buyPrice && parseFloat(buyPrice) > 0) {
+                          setBuyQuantity(
+                            (
+                              activeBuyReservedCash / parseFloat(buyPrice)
+                            ).toFixed(6),
+                          );
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition shadow-sm"
+                    >
+                      Usar Reserva
+                    </button>
+                  )}
                 </div>
-                {activeBuyReservedCash > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBuyAmount(activeBuyReservedCash.toFixed(2));
-                      if (buyPrice && parseFloat(buyPrice) > 0) {
-                        setBuyQuantity(
-                          (
-                            activeBuyReservedCash / parseFloat(buyPrice)
-                          ).toFixed(6),
-                        );
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition shadow-sm"
-                  >
-                    Usar Todo
-                  </button>
+
+                {globalReservedCash > 0 && (
+                  <div className="p-3 rounded-xl bg-sky-950/30 border border-sky-500/20 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Coins className="w-4 h-4 text-sky-400 shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">
+                          Fondo General Disponible
+                        </p>
+                        <p className="text-xs font-bold text-white">
+                          {formatCurrency(globalReservedCash)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const totalAvail =
+                          activeBuyReservedCash + globalReservedCash;
+                        setBuyAmount(totalAvail.toFixed(2));
+                        if (buyPrice && parseFloat(buyPrice) > 0) {
+                          setBuyQuantity(
+                            (totalAvail / parseFloat(buyPrice)).toFixed(6),
+                          );
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 font-bold text-xs transition"
+                    >
+                      Usar Total (+ Fondo)
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -1280,6 +1561,283 @@ export default function Strategies() {
                   {submittingBuy
                     ? "Procesando..."
                     : "Confirmar Compra y Descontar de Reserva"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Manage Reserves */}
+      {showReserveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-black border border-gray-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-slide-in">
+            <div className="flex justify-between items-center p-5 sm:p-6 border-b border-gray-800 bg-gradient-to-r from-gray-950 to-black">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                  <ArrowRightLeft className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    {reserveModalAssetId
+                      ? `Gestionar Reserva de ${
+                          assetsList.find((a) => a.id === reserveModalAssetId)
+                            ?.symbol || "Activo"
+                        }`
+                      : "Gestionar Fondo General"}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    Saldo disponible:{" "}
+                    <span className="font-bold text-emerald-400">
+                      {formatCurrency(
+                        reserveModalAssetId
+                          ? assetPositions[reserveModalAssetId]?.savedCash || 0
+                          : globalReservedCash,
+                      )}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowReserveModal(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleManageReserveSubmit} className="p-6 space-y-5">
+              {/* Action Selector */}
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">
+                  ¿Qué deseas hacer con estos fondos?
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {reserveModalAssetId ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setReserveAction("TO_GLOBAL")}
+                        className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                          reserveAction === "TO_GLOBAL"
+                            ? "bg-emerald-500/15 border-emerald-500 text-white"
+                            : "bg-gray-950 border-gray-800 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <Coins
+                          className={`w-4 h-4 mb-2 ${
+                            reserveAction === "TO_GLOBAL"
+                              ? "text-emerald-400"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <span className="font-bold text-xs">A Fondo General</span>
+                        <span className="text-[10px] text-gray-500 mt-1 leading-tight">
+                          Guardar como liquidez libre
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReserveAction("TO_ASSET")}
+                        className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                          reserveAction === "TO_ASSET"
+                            ? "bg-emerald-500/15 border-emerald-500 text-white"
+                            : "bg-gray-950 border-gray-800 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <ArrowRightLeft
+                          className={`w-4 h-4 mb-2 ${
+                            reserveAction === "TO_ASSET"
+                              ? "text-emerald-400"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <span className="font-bold text-xs">A otra Nómina</span>
+                        <span className="text-[10px] text-gray-500 mt-1 leading-tight">
+                          Pasar a otra acción
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReserveAction("CLEAR")}
+                        className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                          reserveAction === "CLEAR"
+                            ? "bg-rose-500/15 border-rose-500 text-white"
+                            : "bg-gray-950 border-gray-800 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <Trash2
+                          className={`w-4 h-4 mb-2 ${
+                            reserveAction === "CLEAR"
+                              ? "text-rose-400"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <span className="font-bold text-xs">Borrar Reserva</span>
+                        <span className="text-[10px] text-gray-500 mt-1 leading-tight">
+                          Vaciar remanente
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setReserveAction("TO_ASSET")}
+                        className={`sm:col-span-2 p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                          reserveAction === "TO_ASSET"
+                            ? "bg-emerald-500/15 border-emerald-500 text-white"
+                            : "bg-gray-950 border-gray-800 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <ArrowRightLeft
+                          className={`w-4 h-4 mb-2 ${
+                            reserveAction === "TO_ASSET"
+                              ? "text-emerald-400"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <span className="font-bold text-xs">
+                          Distribuir a una Nómina
+                        </span>
+                        <span className="text-[10px] text-gray-500 mt-1">
+                          Sumar saldo a la reserva de una acción
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReserveAction("CLEAR")}
+                        className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                          reserveAction === "CLEAR"
+                            ? "bg-rose-500/15 border-rose-500 text-white"
+                            : "bg-gray-950 border-gray-800 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        <Trash2
+                          className={`w-4 h-4 mb-2 ${
+                            reserveAction === "CLEAR"
+                              ? "text-rose-400"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <span className="font-bold text-xs">Borrar Fondo</span>
+                        <span className="text-[10px] text-gray-500 mt-1">
+                          Liberar remanente
+                        </span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Target Asset selector if TO_ASSET */}
+              {reserveAction === "TO_ASSET" && (
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-400 font-bold mb-1.5">
+                    Activo / Nómina de Destino
+                  </label>
+                  <select
+                    value={reserveTargetAssetId}
+                    onChange={(e) => setReserveTargetAssetId(e.target.value)}
+                    className="w-full bg-black border border-gray-800 focus:border-emerald-500 text-white font-bold text-sm px-4 py-3 rounded-2xl focus:outline-none transition cursor-pointer"
+                    required
+                  >
+                    <option value="" disabled>
+                      Selecciona el activo...
+                    </option>
+                    {assetsList
+                      .filter((a) => a.id !== reserveModalAssetId)
+                      .map((a) => (
+                        <option
+                          key={a.id}
+                          value={a.id}
+                          className="bg-neutral-900 text-white"
+                        >
+                          {a.symbol} — {a.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Amount input */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs uppercase tracking-wider text-gray-400 font-bold">
+                    {reserveAction === "CLEAR"
+                      ? "Monto a Liberar / Borrar ($)"
+                      : "Monto a Transferir ($)"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const avail = reserveModalAssetId
+                        ? assetPositions[reserveModalAssetId]?.savedCash || 0
+                        : globalReservedCash;
+                      setReserveAmount(avail.toFixed(2));
+                    }}
+                    className="text-xs font-bold text-emerald-400 hover:text-emerald-300"
+                  >
+                    Usar Total (
+                    {formatCurrency(
+                      reserveModalAssetId
+                        ? assetPositions[reserveModalAssetId]?.savedCash || 0
+                        : globalReservedCash,
+                    )}
+                    )
+                  </button>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={reserveAmount}
+                    onChange={(e) => setReserveAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-black border border-gray-800 text-white font-extrabold text-lg pl-9 pr-4 py-3 rounded-2xl focus:outline-none focus:border-emerald-500"
+                    required
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1.5">
+                  {reserveAction === "TO_GLOBAL" &&
+                    "Este saldo pasará a tu Fondo General y podrás usarlo en compras libres o distribuirlo en cualquier momento."}
+                  {reserveAction === "TO_ASSET" &&
+                    "El saldo se sumará inmediatamente a la reserva del activo seleccionado listo para ejecutar órdenes."}
+                  {reserveAction === "CLEAR" &&
+                    "Se descontará este monto de la reserva sin generar compras, dejándola limpia o en cero."}
+                </p>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReserveModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-sm transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReserve}
+                  className={`flex-1 py-3 rounded-xl font-extrabold text-sm transition shadow-lg flex items-center justify-center gap-2 ${
+                    reserveAction === "CLEAR"
+                      ? "bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20"
+                      : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/20"
+                  }`}
+                >
+                  {submittingReserve
+                    ? "Procesando..."
+                    : reserveAction === "CLEAR"
+                      ? "Confirmar y Borrar Reserva"
+                      : "Confirmar Reasignación"}
                 </button>
               </div>
             </form>
